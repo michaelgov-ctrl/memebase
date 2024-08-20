@@ -14,7 +14,7 @@ func (app *application) createMemeHandler(w http.ResponseWriter, r *http.Request
 	var input struct {
 		Artist string `json:"artist"`
 		Title  string `json:"title"`
-		Meme   string `json:"meme"`
+		B64    string `json:"b64"`
 	}
 
 	if err := app.readJSON(w, r, &input); err != nil {
@@ -25,7 +25,7 @@ func (app *application) createMemeHandler(w http.ResponseWriter, r *http.Request
 	meme := &data.Meme{
 		Artist: input.Artist,
 		Title:  input.Title,
-		Meme:   input.Meme,
+		B64:    input.B64,
 	}
 
 	v := validator.New()
@@ -98,7 +98,7 @@ func (app *application) updateMemeHandler(w http.ResponseWriter, r *http.Request
 	var input struct {
 		Artist *string `json:"artist"`
 		Title  *string `json:"title"`
-		Meme   *string `json:"meme"`
+		B64    *string `json:"b64"`
 	}
 
 	if err := app.readJSON(w, r, &input); err != nil {
@@ -114,8 +114,8 @@ func (app *application) updateMemeHandler(w http.ResponseWriter, r *http.Request
 		meme.Title = *input.Title
 	}
 
-	if input.Meme != nil {
-		meme.Meme = *input.Meme
+	if input.B64 != nil {
+		meme.B64 = *input.B64
 	}
 
 	v := validator.New()

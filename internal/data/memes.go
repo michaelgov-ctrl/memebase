@@ -27,7 +27,7 @@ type Meme struct {
 	Created time.Time `json:"created" bson:"created"`
 	Artist  string    `json:"artist" bson:"artist"`
 	Title   string    `json:"title" bson:"title"`
-	Meme    string    `json:"meme" bson:"meme"`
+	B64     string    `json:"b64" bson:"b64"`
 	Version int32     `json:"version" bson:"version"`
 }
 
@@ -44,8 +44,8 @@ func (m *Meme) ToEditMeme() *MongoEditMeme {
 		updateMeme.Title = m.Title
 	}
 
-	if m.Meme != "" {
-		updateMeme.Meme = m.Meme
+	if m.B64 != "" {
+		updateMeme.B64 = m.B64
 	}
 
 	if m.Version != 0 {
@@ -60,14 +60,14 @@ func ValidateMeme(v *validator.Validator, meme *Meme) {
 	v.Check(len(meme.Artist) <= 64, "artist", "must not be more than 64 bytes long")
 	v.Check(meme.Title != "", "title", "must be provided")
 	v.Check(len(meme.Title) <= 64, "title", "must not be more than 64 bytes long")
-	v.Check(meme.Meme != "", "meme", "must be provided")
+	v.Check(meme.B64 != "", "b64", "must be provided")
 }
 
 type MongoEditMeme struct {
 	Artist  string    `bson:"artist"`
 	Created time.Time `bson:"created"`
 	Title   string    `bson:"title"`
-	Meme    string    `bson:"meme"`
+	B64     string    `bson:"b64"`
 	Version int32     `bson:"version"`
 }
 
