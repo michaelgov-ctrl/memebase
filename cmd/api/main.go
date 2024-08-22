@@ -44,8 +44,8 @@ func main() {
 	flag.StringVar(&cfg.env, "env", "dev", "Environment (dev|test|prod)")
 	flag.StringVar(&cfg.logLevel, "log-level", "error", "Logging level (trace|debug|info|warning|error)")
 
-	flag.StringVar(&cfg.db.user, "db-user", "", "MongoDB user")
-	flag.StringVar(&cfg.db.password, "db-password", "", "MongoDB password")
+	flag.StringVar(&cfg.db.user, "db-user", "user", "MongoDB user")
+	flag.StringVar(&cfg.db.password, "db-password", "password", "MongoDB password")
 	flag.StringVar(&cfg.db.uri, "db-uri", "mongodb://localhost:27017", "MongoDB URI")
 
 	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 10, "Rate limiter maximum requests per second")
