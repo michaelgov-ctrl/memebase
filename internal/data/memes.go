@@ -22,13 +22,19 @@ type MemeModel struct {
 	DB *mongo.Client
 }
 
+type Image struct {
+	Type  string `json:"type"`
+	Bytes []byte `json:"bytes"`
+}
+
 type Meme struct {
-	ID      string    `json:"id" bson:"_id"` //"go.mongodb.org/mongo-driver/bson/primitive" ID     primitive.ObjectID
-	Created time.Time `json:"created" bson:"created"`
-	Artist  string    `json:"artist" bson:"artist"`
-	Title   string    `json:"title" bson:"title"`
-	B64     string    `json:"b64" bson:"b64"`
-	Version int32     `json:"version" bson:"version"`
+	ID            string    `json:"id" bson:"_id"` //"go.mongodb.org/mongo-driver/bson/primitive" ID     primitive.ObjectID
+	Created       time.Time `json:"created" bson:"created"`
+	Artist        string    `json:"artist" bson:"artist"`
+	Title         string    `json:"title" bson:"title"`
+	Image         Image     `json:"image"`
+	ImageLocation string    `json:"imageLocation" bson:"imageLocation"`
+	Version       int32     `json:"version" bson:"version"`
 }
 
 func (m *Meme) ToEditMeme() *MongoEditMeme {
@@ -44,8 +50,8 @@ func (m *Meme) ToEditMeme() *MongoEditMeme {
 		updateMeme.Title = m.Title
 	}
 
-	if m.B64 != "" {
-		updateMeme.B64 = m.B64
+	if m.ImageLocation != "" {
+		updateMeme.ImageLocation = m.ImageLocation
 	}
 
 	if m.Version != 0 {
@@ -60,15 +66,16 @@ func ValidateMeme(v *validator.Validator, meme *Meme) {
 	v.Check(len(meme.Artist) <= 64, "artist", "must not be more than 64 bytes long")
 	v.Check(meme.Title != "", "title", "must be provided")
 	v.Check(len(meme.Title) <= 64, "title", "must not be more than 64 bytes long")
-	v.Check(meme.B64 != "", "b64", "must be provided")
+	v.Check(meme.Image.Type != "", "image.type", "must be provided")
+	v.Check(len(meme.Image.Bytes) != 0, "image.bytes", "must be provided")
 }
 
 type MongoEditMeme struct {
-	Artist  string    `bson:"artist"`
-	Created time.Time `bson:"created"`
-	Title   string    `bson:"title"`
-	B64     string    `bson:"b64"`
-	Version int32     `bson:"version"`
+	Artist        string    `bson:"artist"`
+	Created       time.Time `bson:"created"`
+	Title         string    `bson:"title"`
+	ImageLocation string    `bson:"imageLocation"`
+	Version       int32     `bson:"version"`
 }
 
 func (m MemeModel) Insert(meme *Meme) error {
@@ -76,6 +83,9 @@ func (m MemeModel) Insert(meme *Meme) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
+
+	// TODO: dump image to minio then add image location to editmeme
+	fmt.Println(meme.Image)
 
 	res, err := m.DB.Database(dbName).Collection(collectionName).InsertOne(ctx, meme.ToEditMeme())
 	if err != nil {
@@ -112,6 +122,8 @@ func (m MemeModel) Get(id string) (*Meme, error) {
 		}
 	}
 
+	// TODO: take image location from returned meme and lookup the image in minio
+
 	meme.ID = id
 	return &meme, nil
 }
@@ -146,6 +158,8 @@ func (m MemeModel) GetAll(artist, title string, filters Filters) ([]*Meme, Metad
 	if err := cursor.Err(); err != nil {
 		return nil, metadata, err
 	}
+
+	// TODO: go get the Image form minio for each meme ImageLocation
 
 	metadata.Calculate(len(memes), int(count), filters.Page, filters.PageSize)
 
@@ -182,6 +196,8 @@ func (m MemeModel) Update(meme *Meme) error {
 
 	filter := bson.D{{"_id", objID}, {"version", meme.Version}}
 
+	// TODO: after update take image location over to minio & update Image
+	// consideration: this could elicit non-atomic actions where the meme resource in mongo was updated but not in minio if minio fails
 	meme.Version += 1
 	updateMeme := meme.ToEditMeme()
 	update := bson.M{"$set": updateMeme}
@@ -212,6 +228,7 @@ func (m MemeModel) Delete(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	// TODO: take ImageLocation & delete from minio as well
 	res, err := m.DB.Database(dbName).Collection(collectionName).DeleteOne(ctx, filter, nil)
 	if err != nil {
 		return err
