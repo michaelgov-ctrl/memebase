@@ -85,6 +85,8 @@ func (m MemeModel) Insert(meme *Meme) error {
 	defer cancel()
 
 	// TODO: dump image to minio then add image location to editmeme
+	fmt.Println(meme.Image)
+
 	res, err := m.DB.Database(dbName).Collection(collectionName).InsertOne(ctx, meme.ToEditMeme())
 	if err != nil {
 		return err
