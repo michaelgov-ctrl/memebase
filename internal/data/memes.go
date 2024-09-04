@@ -28,13 +28,13 @@ type Image struct {
 }
 
 type Meme struct {
-	ID            string    `json:"id" bson:"_id"` //"go.mongodb.org/mongo-driver/bson/primitive" ID     primitive.ObjectID
-	Created       time.Time `json:"created" bson:"created"`
-	Artist        string    `json:"artist" bson:"artist"`
-	Title         string    `json:"title" bson:"title"`
-	Image         Image     `json:"image"`
-	ImageLocation string    `json:"imageLocation" bson:"imageLocation"`
-	Version       int32     `json:"version" bson:"version"`
+	ID            primitive.ObjectID `json:"id" bson:"_id,omitempty"` //"go.mongodb.org/mongo-driver/bson/primitive" ID     primitive.ObjectID
+	Created       time.Time          `json:"created" bson:"created"`
+	Artist        string             `json:"artist" bson:"artist"`
+	Title         string             `json:"title" bson:"title"`
+	Image         Image              `json:"image"`
+	ImageLocation string             `json:"imageLocation" bson:"imageLocation"`
+	Version       int32              `json:"version" bson:"version"`
 }
 
 func (m *Meme) ToEditMeme() *MongoEditMeme {
@@ -97,7 +97,7 @@ func (m MemeModel) Insert(meme *Meme) error {
 		panic(fmt.Sprintf("insert operation returned unexpected value %v", id))
 	}
 
-	meme.ID = id.Hex()
+	meme.ID = id
 
 	return nil
 }
@@ -124,7 +124,6 @@ func (m MemeModel) Get(id string) (*Meme, error) {
 
 	// TODO: take image location from returned meme and lookup the image in minio
 
-	meme.ID = id
 	return &meme, nil
 }
 
@@ -189,12 +188,7 @@ func (m MemeModel) GetRandom() (*Meme, error) {
 }
 
 func (m MemeModel) Update(meme *Meme) error {
-	objID, err := primitive.ObjectIDFromHex(meme.ID)
-	if err != nil {
-		return ErrDocNotFound
-	}
-
-	filter := bson.D{{"_id", objID}, {"version", meme.Version}}
+	filter := bson.D{{"_id", meme.ID}, {"version", meme.Version}}
 
 	// TODO: after update take image location over to minio & update Image
 	// consideration: this could elicit non-atomic actions where the meme resource in mongo was updated but not in minio if minio fails
@@ -223,13 +217,11 @@ func (m MemeModel) Delete(id string) error {
 		return ErrDocNotFound
 	}
 
-	filter := bson.D{{"_id", objID}}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	// TODO: take ImageLocation & delete from minio as well
-	res, err := m.DB.Database(dbName).Collection(collectionName).DeleteOne(ctx, filter, nil)
+	res, err := m.DB.Database(dbName).Collection(collectionName).DeleteOne(ctx, bson.D{{"_id", objID}}, nil)
 	if err != nil {
 		return err
 	}

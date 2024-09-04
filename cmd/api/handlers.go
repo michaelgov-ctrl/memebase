@@ -40,7 +40,7 @@ func (app *application) createMemeHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	headers := make(http.Header)
-	headers.Set("Location", fmt.Sprintf("/v1/memes/%s", meme.ID))
+	headers.Set("Location", fmt.Sprintf("/v1/memes/%s", meme.ID.Hex()))
 
 	if err := app.writeJSON(w, http.StatusCreated, envelope{"meme": meme}, headers); err != nil {
 		app.serverErrorResponse(w, r, err)
